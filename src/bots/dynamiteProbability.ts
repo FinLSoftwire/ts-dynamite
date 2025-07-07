@@ -4,10 +4,11 @@ class Bot {
     private roundWinners = new Set<string>(["RS", "SP",
         "PR", "WD", "RW", "PW", "SW", "DR", "DP", "DS"]);
     private currentNonDrawingRounds = 1;
-    private currentLosingRounds = 1;
+    private currentLosingRounds = 0;
     private pointValue = 1;
-    private dynamiteUseThreshold: number = 0.2;
+    private dynamiteUseThreshold: number = 0.1;
     private dynamiteUses: number = 0;
+    private dynamiteAttempts: number = 0;
     private currentScoreLikelihood = 1;
 
     makeMove(gamestate: Gamestate): BotSelection {
@@ -22,11 +23,20 @@ class Bot {
             if (roundScoreDelta < 0) {
                 this.currentLosingRounds++;
             }
-            this.currentScoreLikelihood /= this.currentLosingRounds;
+            this.currentScoreLikelihood /= Math.max(1,this.currentLosingRounds);
         }
-        if (this.currentLosingRounds > this.currentNonDrawingRounds/2 && this.currentScoreLikelihood <= this.dynamiteUseThreshold && this.dynamiteUses < 100) {
+        // Use dynamite by default after a draw
+        if (this.pointValue > 1 && this.dynamiteUses < 100) {
             this.dynamiteUses++;
             return 'D';
+        }
+        if (this.currentLosingRounds > this.currentNonDrawingRounds/2 && this.currentScoreLikelihood <= this.dynamiteUseThreshold) {
+            if (this.dynamiteUses < 100) {
+                this.dynamiteUses++;
+                return 'D';
+            } else {
+                this.dynamiteAttempts++;
+            }
         }
         return <BotSelection>'RPS'[Math.round(Math.random()*3-0.5)];
     }
