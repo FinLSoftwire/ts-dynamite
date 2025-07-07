@@ -9,8 +9,9 @@ class Bot {
     private pointValue = 1;
     private dynamiteUseThreshold: number = 0.1;
     private dynamiteUses: number = 0;
-    private dynamiteAttempts: number = 0;
+    private opponentDynamiteUses: number = 0;
     private currentScoreLikelihood = 1;
+    private opponentDynamitesOnDraw = false;
 
     makeMove(gamestate: Gamestate): BotSelection {
         // Goal is to use dynamite sparingly - when winning below a certain threshold
@@ -27,16 +28,23 @@ class Bot {
             this.currentScoreLikelihood /= Math.max(1,this.currentLosingRounds);
         }
         // Use dynamite by default after a draw
-        if (this.pointValue > 1 && this.dynamiteUses < 100) {
-            this.dynamiteUses++;
-            return 'D';
+        if (this.pointValue > 1) {
+            if (this.pointValue > 3) {
+                this.opponentDynamitesOnDraw = true;
+            }
+            if (this.opponentDynamitesOnDraw && this.opponentDynamiteUses < 100) {
+                console.log("Watered down!");
+                return 'W';
+            }
+            if (this.dynamiteUses < 100) {
+                this.dynamiteUses++;
+                return 'D';
+            }
         }
         if (this.currentLosingRounds > this.currentNonDrawingRounds/2 && this.currentScoreLikelihood <= this.dynamiteUseThreshold) {
             if (this.dynamiteUses < 100) {
                 this.dynamiteUses++;
                 return 'D';
-            } else {
-                this.dynamiteAttempts++;
             }
         }
         return <BotSelection>'RPS'[Math.round(Math.random()*3-0.5)];
@@ -44,6 +52,9 @@ class Bot {
 
     // Return the scoring delta (1 is positive for the bot)
     private determineWin(previousRound) {
+        if (previousRound.p2 === "D") {
+            this.opponentDynamiteUses++;
+        }
         if (previousRound.p1 === previousRound.p2) {
             this.pointValue++;
             return 0;
