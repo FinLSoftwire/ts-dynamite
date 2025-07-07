@@ -11,13 +11,11 @@ class Bot {
     private dynamiteUses: number = 0;
     private opponentDynamiteUses: number = 0;
     private opponentDrawBehaviour: number = 0; // 0 random, 1 D, 2 W
-    private dynamiteRepetitionThreshold = 2;
 
     makeMove(gamestate: Gamestate): BotSelection {
-        // Goal is to use dynamite sparingly - when winning below a certain threshold
-        // Or if nearing the end of the game
         if (gamestate.rounds.length === 0)
             return <BotSelection>'RPS'[Math.round(Math.random()*3-0.5)];
+        // Track the current number of non-drawn rounds and lost rounds
         let roundScoreDelta = this.determineWin(gamestate.rounds[gamestate.rounds.length-1]);
         if (roundScoreDelta !== 0) {
             this.currentNonDrawingRounds++;
@@ -25,6 +23,7 @@ class Bot {
                 this.currentLosingRounds++;
             }
         }
+        // After a draw has been resolved, predict opponent draw behaviour
         if (this.previousPointValue > 1 && this.pointValue === 1) {
             if (gamestate.rounds[gamestate.rounds.length-1].p2 === "D" && this.opponentDynamiteUses<100) {
                 this.opponentDrawBehaviour = 1;
@@ -34,7 +33,7 @@ class Bot {
                 this.opponentDrawBehaviour = 0;
             }
         }
-        // Use dynamite by default after a draw
+        // Use internal logic to handle a draw
         if (this.pointValue > 1) {
             if (this.pointValue > 3 && this.opponentDrawBehaviour === 0 && this.opponentDynamiteUses<100) {
                 return 'W';
@@ -50,7 +49,7 @@ class Bot {
                 return 'W';
             }
         }
-        // Get the higher win rate
+        // Try and use dynamite more often if not using it enough
         if (this.dynamiteUses < 100) {
             let ownLossRate = this.currentLosingRounds / this.currentNonDrawingRounds;
             let higherWinRate = Math.max(1 - ownLossRate, ownLossRate);
@@ -62,6 +61,7 @@ class Bot {
                 return 'D';
             }
         }
+        // Fallback to a random choice
         return <BotSelection>'RPS'[Math.round(Math.random()*3-0.5)];
     }
 
