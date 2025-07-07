@@ -12,6 +12,7 @@ class Bot {
     private opponentDynamiteUses: number = 0;
     private currentScoreLikelihood = 1;
     private opponentDynamitesOnDraw = false;
+    private dynamiteRepetitionThreshold = 5;
 
     makeMove(gamestate: Gamestate): BotSelection {
         // Goal is to use dynamite sparingly - when winning below a certain threshold
@@ -29,17 +30,24 @@ class Bot {
         }
         // Use dynamite by default after a draw
         if (this.pointValue > 1) {
-            if (this.pointValue > 3) {
-                this.opponentDynamitesOnDraw = true;
+            if (this.pointValue > this.dynamiteRepetitionThreshold && !this.opponentDynamitesOnDraw && this.opponentDynamiteUses < 100) {
+                let usesDynamite = true;
+                for (let i = 1; i < this.dynamiteRepetitionThreshold+1; i++) {
+                    if (gamestate.rounds[gamestate.rounds.length - i].p2 !== "D") {
+                        usesDynamite = false;
+                    }
+                }
+                this.opponentDynamitesOnDraw = usesDynamite;
             }
             if (this.opponentDynamitesOnDraw && this.opponentDynamiteUses < 100) {
-                console.log("Watered down!");
                 return 'W';
             }
             if (this.dynamiteUses < 100) {
                 this.dynamiteUses++;
                 return 'D';
             }
+            if (this.opponentDynamitesOnDraw)
+                console.log(this.currentNonDrawingRounds);
         }
         if (this.currentLosingRounds > this.currentNonDrawingRounds/2 && this.currentScoreLikelihood <= this.dynamiteUseThreshold) {
             if (this.dynamiteUses < 100) {
